@@ -1,7 +1,5 @@
 const Loan = require("../models/Loan")
 const PDFDocument = require("pdfkit")
-const fs = require("fs")
-const path = require("path")
 
 // Get all loans
 exports.getLoans = async (req, res) => {
@@ -435,17 +433,18 @@ exports.generatePDF = async (req, res) => {
       loans = await Loan.find(query).sort({ loanDate: -1 })
     }
 
-    // Create PDF
+    // Create PDF - stream directly to response (no file system needed)
     const doc = new PDFDocument({ margin: 50 })
-    const reportsDir = path.join(__dirname, "../reports")
-    if (!fs.existsSync(reportsDir)) {
-      fs.mkdirSync(reportsDir, { recursive: true })
-    }
-
     const filename = loanId
       ? `loan-receipt-${loans[0].customerName.replace(/\s+/g, "-")}-${Date.now()}.pdf`
       : `loan-report-${Date.now()}.pdf`
-    const filepath = path.join(reportsDir, filename)
+
+    // Set response headers for PDF download
+    res.setHeader("Content-Type", "application/pdf")
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`)
+    
+    // Pipe PDF directly to response (no file system operations)
+    doc.pipe(res)
 
     // Helper function to add footer
     const addFooter = () => {
@@ -473,11 +472,6 @@ exports.generatePDF = async (req, res) => {
       
       doc.fillColor("black")
     }
-
-    // Pipe PDF to response directly (no file needed)
-    res.setHeader("Content-Type", "application/pdf")
-    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`)
-    doc.pipe(res)
 
     // PDF Header
     if (loans.length === 1 && loanId) {
