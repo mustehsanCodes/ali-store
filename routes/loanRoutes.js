@@ -12,15 +12,16 @@ const {
   generatePDF,
 } = require("../controllers/loanController")
 
-router.route("/").get(getLoans).post(createLoan)
+// IMPORTANT: Specific routes must come BEFORE parameterized routes
+router.get("/date-range", getLoansByDateRange)
+router.get("/generate-pdf", generatePDF)
 
-router.route("/:id").get(getLoan).put(updateLoan).delete(deleteLoan)
+router.route("/").get(getLoans).post(createLoan)
 
 router.post("/:id/payments", addPayment)
 router.delete("/:id/payments/:paymentId", deletePayment)
 
-router.get("/date-range", getLoansByDateRange)
-router.get("/generate-pdf", generatePDF)
+router.route("/:id").get(getLoan).put(updateLoan).delete(deleteLoan)
 
 module.exports = router
 
